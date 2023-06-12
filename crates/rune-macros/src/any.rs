@@ -49,7 +49,7 @@ impl InternalCall {
 
         let name = syn::LitStr::new(&name.to_string(), name.span());
 
-        expand_any(&self.path, type_hash, &name, &[], &tokens, &generics)
+        expand_any(&self.path, type_hash, &name, false, &[], &tokens, &generics)
     }
 }
 
@@ -103,7 +103,17 @@ impl Derive {
 
         let name = syn::LitStr::new(&name.to_string(), name.span());
 
-        expand_any(ident, type_hash, &name, &installers, &tokens, generics)
+        let has_inner = attr.has_inner;
+
+        expand_any(
+            ident,
+            type_hash,
+            &name,
+            has_inner,
+            &installers,
+            &tokens,
+            generics,
+        )
     }
 }
 
@@ -457,6 +467,7 @@ pub(super) fn expand_any<T>(
     ident: T,
     type_hash: Hash,
     name: &syn::LitStr,
+    has_inner: bool,
     installers: &[TokenStream],
     tokens: &Tokens,
     generics: &syn::Generics,
@@ -466,6 +477,7 @@ where
 {
     let Tokens {
         any,
+        any_hash,
         context_error,
         hash,
         module,
@@ -536,14 +548,30 @@ where
         }
     };
 
-    Ok(quote! {
+    let impl_any_hash = quote!{
         #[automatically_derived]
-        impl #impl_generics #any for #ident #type_generics #where_clause {
+        impl #impl_generics #any_hash for #ident #type_generics #where_clause {
             fn type_hash() -> #hash {
                 #make_hash
             }
         }
+    };
+    let impl_any = (!has_inner).then(|| {
+        quote!{
+            #[automatically_derived]
+            impl #impl_generics #any for #ident #type_generics #where_clause {
+                type Inner = Self;
+                #[inline(always)]
+                fn with_inner<R>(self, f: impl FnOnce(Self::Inner) -> R) -> core::result::Result<R, #context_error> {
+                    Ok(f(self))
+                }
+            }        
+        }
+    });
 
+    Ok(quote! {
+        #impl_any_hash
+        #impl_any
         #install_with
         #impl_named
 
@@ -551,7 +579,7 @@ where
         impl #impl_generics #type_of for #ident #type_generics #where_clause {
             #[inline]
             fn type_hash() -> #hash {
-                <Self as #any>::type_hash()
+                <Self as #any_hash>::type_hash()
             }
 
             #[inline]

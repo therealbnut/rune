@@ -7,7 +7,7 @@ use anyhow::{anyhow, bail, Context as _, Result};
 use rune::compile::Named;
 use rune::runtime::{MaybeTypeOf, ToValue, Type, TypeOf, UnsafeFromValue};
 use rune::termcolor;
-use rune::{Any, Context, ContextError, Diagnostics, Module, Sources, Vm};
+use rune::{Any, AnyHash, Context, ContextError, Diagnostics, Module, Sources, Vm};
 
 #[derive(Any)]
 #[rune(item = ::native_crate)]
@@ -104,7 +104,7 @@ fn test_generic() -> Result<()> {
             $(
                 let value = vm.call([stringify!($function_ty)], ()).with_context(|| anyhow!("{}: {}: Working call", stringify!($ty), stringify!($function_ty)))?;
                 let value: Type = rune::from_value(value).with_context(|| anyhow!("{}: {}: Output value", stringify!($ty), stringify!($function_ty)))?;
-                assert_eq!(<Generic::<$ty> as Any>::type_hash(), value.into_hash());
+                assert_eq!(<Generic::<$ty> as AnyHash>::type_hash(), value.into_hash());
             )*
         };
     }

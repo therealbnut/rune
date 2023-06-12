@@ -12,6 +12,8 @@ prelude!();
 use std::cell::Cell;
 use std::rc::Rc;
 
+use crate::AnyHash;
+
 #[test]
 fn bug_344_function() -> Result<()> {
     let mut context = Context::new();
@@ -49,7 +51,7 @@ fn bug_344_inst_fn() -> Result<()> {
     context.install(module)?;
     let runtime = context.runtime();
 
-    let hash = Hash::associated_function(<GuardCheck as Any>::type_hash(), "function");
+    let hash = Hash::associated_function(<GuardCheck as AnyHash>::type_hash(), "function");
 
     let function = runtime.function(hash).expect("expect function");
 
@@ -112,7 +114,7 @@ fn bug_344_async_inst_fn() -> Result<()> {
     context.install(module)?;
     let runtime = context.runtime();
 
-    let hash = Hash::associated_function(<GuardCheck as Any>::type_hash(), "function");
+    let hash = Hash::associated_function(<GuardCheck as AnyHash>::type_hash(), "function");
 
     let function = runtime.function(hash).expect("expect function");
 
@@ -169,9 +171,18 @@ impl GuardCheck {
     }
 }
 
-impl Any for GuardCheck {
+impl AnyHash for GuardCheck {
     fn type_hash() -> Hash {
         Hash::new(0x6b8fb6d544712e99)
+    }
+}
+impl Any for GuardCheck {
+    type Inner = Self;
+    fn with_inner<R>(
+        self,
+        f: impl FnOnce(Self::Inner) -> R,
+    ) -> core::result::Result<R, ContextError> {
+        Ok(f(self))
     }
 }
 
@@ -182,7 +193,7 @@ impl Named for GuardCheck {
 impl TypeOf for GuardCheck {
     #[inline]
     fn type_hash() -> Hash {
-        <Self as Any>::type_hash()
+        <Self as AnyHash>::type_hash()
     }
 
     #[inline]

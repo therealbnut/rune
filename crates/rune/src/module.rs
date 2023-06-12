@@ -6,6 +6,7 @@
 mod function_meta;
 mod function_traits;
 pub(crate) mod module;
+mod type_builder;
 
 use core::fmt;
 use core::marker::PhantomData;

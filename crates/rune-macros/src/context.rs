@@ -72,6 +72,8 @@ pub(crate) struct TypeAttr {
     pub(crate) parse: ParseKind,
     /// `#[rune(item = <path>)]`.
     pub(crate) item: Option<syn::Path>,
+    /// `#[rune(has_inner)]`.
+    pub(crate) has_inner: bool,
     /// Parsed documentation.
     pub(crate) docs: Vec<syn::Expr>,
 }
@@ -441,6 +443,9 @@ impl Context {
                         // Parse `#[rune(install_with = <path>)]`
                         meta.input.parse::<Token![=]>()?;
                         attr.install_with = Some(parse_path_compat(meta.input)?);
+                    } else if meta.path == HAS_INNER {
+                        // Parse `#[rune(has_inner)]`
+                        attr.has_inner = true;
                     } else {
                         return Err(syn::Error::new_spanned(
                             &meta.path,
@@ -662,6 +667,7 @@ impl Context {
         Tokens {
             any_type_info: path(m, ["runtime", "AnyTypeInfo"]),
             any: path(m, ["Any"]),
+            any_hash: path(m, ["AnyHash"]),
             compile_error: path(m, ["compile", "Error"]),
             context_error: path(m, ["compile", "ContextError"]),
             from_value: path(m, ["runtime", "FromValue"]),
@@ -738,6 +744,7 @@ fn path<const N: usize>(base: &syn::Path, path: [&'static str; N]) -> syn::Path 
 pub(crate) struct Tokens {
     pub(crate) any_type_info: syn::Path,
     pub(crate) any: syn::Path,
+    pub(crate) any_hash: syn::Path,
     pub(crate) compile_error: syn::Path,
     pub(crate) context_error: syn::Path,
     pub(crate) from_value: syn::Path,

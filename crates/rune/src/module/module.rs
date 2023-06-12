@@ -1164,7 +1164,7 @@ impl Module {
     }
 
     /// Install an associated function.
-    fn assoc_fn(
+    pub(crate) fn assoc_fn(
         &mut self,
         data: AssociatedFunctionData,
         docs: Docs,

@@ -2,6 +2,7 @@ use core::any;
 
 use crate::compile::Named;
 use crate::hash::Hash;
+use crate::ContextError;
 
 /// Macro to mark a value as external, which will implement all the appropriate
 /// traits.
@@ -72,7 +73,17 @@ pub use rune_macros::Any;
 ///     name: String,
 /// }
 /// ```
-pub trait Any: Named + any::Any {
+pub trait Any: Named + AnyHash + any::Any {
+    /// The concrete type this represents.
+    /// It could be `Self`, or it could be a wrapped value.
+    type Inner;
+
+    /// Allows you to access `Inner` from self.
+    fn with_inner<R>(self, f: impl FnOnce(Self::Inner) -> R) -> Result<R, ContextError>;
+}
+
+/// Any Hash.
+pub trait AnyHash {
     /// The type hash of the type.
     ///
     /// TODO: make const field when `TypeId::of` is const.
